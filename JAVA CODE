@@ -1,0 +1,219 @@
+import java.util.Scanner;
+import java.util.HashMap;
+import java.util.Map;
+
+public class RestaurantManagement {
+  // Initialize variables for menu items and prices
+  static String[] menuItems = {"Pizza", "Pasta", "Salad", "Sandwich", "Soup"};
+  static double[] menuPrices = {12.99, 10.99, 8.99, 9.99, 7.99};
+
+  // Initialize map for storing order modifications
+  static Map<String, String> orderModifications = new HashMap<String, String>();
+
+  public static void main(String[] args) {
+    Scanner input = new Scanner(System.in);
+
+    // Initialize variables for user and order details
+    String username = "";
+    String role = "";
+    String[] orderItems = new String[10];
+    int[] orderQuantities = new int[10];
+    double[] orderPrices = new double[10];
+    int orderCount = 0;
+    double orderTotal = 0;
+    String deliveryStatus = "";
+    String paymentMethod = "";
+    int loyaltyPoints = 0;
+    String tableNumber = "";
+
+    // Display login prompt and process login details
+    System.out.println("Welcome to the restaurant management system. Please log in to continue.");
+    while (true) {
+      System.out.print("Username: ");
+      username = input.nextLine();
+      System.out.print("Password: ");
+      String password = input.nextLine();
+      if (authenticate(username, password)) {
+        role = getRole(username);
+        break;
+      }
+      System.out.println("Invalid login details. Please try again.");
+    }
+
+    // Display menu and prompt user to place an order
+    System.out.println("\nWelcome, " + username + ". Here is our menu:");
+    for (int i = 0; i < menuItems.length; i++) {
+      System.out.println(menuItems[i] + " - $" + menuPrices[i]);
+    }
+    System.out.println("\nPlease place your order by entering the item name and quantity separated by a space (e.g. Pizza 2). Type 'modify' to add special instructions or modifications to an item, or 'checkout' to complete your order.");
+
+    // Process orders until user enters "checkout"
+    while (true) {
+      String line = input.nextLine();
+      if (line.equalsIgnoreCase("checkout")) {
+        break;
+      }
+      if (line.equalsIgnoreCase("modify")) {
+        System.out.print("Enter the item name: ");
+        String itemName = input.nextLine();
+        System.out.print("Enter the modification: ");
+        String modification = input.nextLine();
+        orderModifications.put(itemName, modification);
+        continue;
+      }
+
+      // Split input into item name and quantity
+      String[] parts = line.split(" ");
+      String itemName = parts[0];
+      int quantity = Integer.parseInt(parts[1]);
+
+      // Find item in menu and add to order details
+      int index = -1;
+      for (int i = 0; i < menuItems.length; i++) {
+      if (menuItems[i].equalsIgnoreCase(itemName)) {
+      index = i;
+      break;
+      }
+      }
+      if (index == -1) {
+      System.out.println("Sorry, we don't have that item on the menu. Please try again.");
+      continue;
+      }
+      orderItems[orderCount] = menuItems[index];
+      orderQuantities[orderCount] = quantity;
+      orderPrices[orderCount] = menuPrices[index] * quantity;
+      orderTotal += orderPrices[orderCount];
+      orderCount++;
+      }
+      // Prompt user for delivery or pickup
+System.out.print("\nWould you like your order for pickup or delivery? (P/D): ");
+String pickupOrDelivery = input.nextLine();
+if (pickupOrDelivery.equalsIgnoreCase("D")) {
+  deliveryStatus = "en route";
+  System.out.print("Enter your delivery address: ");
+  String deliveryAddress = input.nextLine();
+} else {
+  deliveryStatus = "ready for pickup";
+}
+
+// Prompt user for payment method
+System.out.println("\nPlease choose a payment method:");
+System.out.println("1. Credit card");
+System.out.println("2. Saved payment method");
+System.out.print("Enter your choice (1 or 2): ");
+int paymentChoice = input.nextInt();
+if (paymentChoice == 1) {
+  paymentMethod = "credit card";
+  System.out.print("Enter your credit card number: ");
+  String creditCardNumber = input.nextLine();
+  System.out.print("Enter the expiration date (MM/YY): ");
+  String expirationDate = input.nextLine();
+  System.out.print("Enter the CVV: ");
+  String cvv = input.nextLine();
+} else {
+  paymentMethod = "saved payment method";
+  System.out.print("Enter your saved payment method ID: ");
+  String paymentMethodId = input.nextLine();
+}
+
+// Check for loyalty program membership and apply points
+System.out.print("\nAre you a member of our loyalty program? (Y/N): ");
+String loyaltyChoice = input.nextLine();
+if (loyaltyChoice.equalsIgnoreCase("Y")) {
+  loyaltyPoints = (int)(orderTotal / 10.0);
+  System.out.println("You have earned " + loyaltyPoints + " loyalty points on this purchase.");
+}
+
+// Assign table number for dine-in orders
+if (pickupOrDelivery.equalsIgnoreCase("P")) {
+  System.out.print("\nEnter the table number for your dine-in order: ");
+  tableNumber = input.nextLine();
+}
+
+// Display order summary and total
+System.out.println("\nThank you for your order! Here is a summary:");
+for (int i = 0; i < orderCount; i++) {
+  String modification = orderModifications.get(orderItems[i]);
+  if (modification != null)
+{
+System.out.println(orderQuantities[i] + "x " + orderItems[i] + " - $" + orderPrices[i] + " (" + modification + ")");
+} else {
+System.out.println(orderQuantities[i] + "x " + orderItems[i] + " - $" + orderPrices[i]);
+}
+}
+System.out.println("Total: $" + orderTotal);
+// Save order details to database
+saveOrder(username, role, orderItems, orderQuantities, orderPrices, orderTotal, deliveryStatus, paymentMethod, loyaltyPoints, tableNumber);
+
+// Display options for servers and managers
+if (role.equalsIgnoreCase("server") || role.equalsIgnoreCase("manager")) {
+  while (true) {
+    System.out.println("\nWhat would you like to do next?");
+    System.out.println("1. View order details");
+    System.out.println("2. View sales report");
+    System.out.println("3. Manage menu items");
+    System.out.println("4. Manage tables");
+    System.out.println("5. Log out");
+    System.out.print("Enter your choice (1-5): ");
+    int choice = input.nextInt();
+    if (choice == 1) {
+      viewOrderDetails(username);
+    } else if (choice == 2) {
+      viewSalesReport();
+    } else if (choice == 3 && role.equalsIgnoreCase("manager")) {
+      manageMenuItems();
+    } else if (choice == 4 && role.equalsIgnoreCase("server")) {
+      manageTables();
+    } else if (choice == 5) {
+      break;
+    } else {
+      System.out.println("Invalid choice. Please try again.");
+    }
+  }
+}
+}
+
+// Method for authenticating a user's login details
+public static boolean authenticate(String username, String password) {
+// Connect to database and check if username and password are valid
+// Return true if valid, false if invalid
+return true; // temporary return value
+}
+
+// Method for getting a user's role based on their username
+public static String getRole(String username) {
+// Connect to database and retrieve user's role
+// Return role as a string
+return "server"; // temporary return value
+}
+
+// Method for saving an order's details to the database
+public static void saveOrder(String username, String role, String[] orderItems, int[] orderQuantities, double[] orderPrices, double orderTotal, String deliveryStatus, String paymentMethod, int loyaltyPoints, String tableNumber) {
+// Connect to database and save order details
+}
+
+// Method for viewing an order's details
+public static void viewOrderDetails(String username) {
+// Connect to database and retrieve order details for specified user
+// Display order details
+}
+
+// Method for viewing the sales report
+public static void viewSalesReport() {
+// Connect to database and retrieve sales data
+// Display sales report
+}
+
+// Method for managing menu items
+public static void manageMenuItems() {
+// Prompt user to add, remove, or update menu items
+// Connect to database and perform the desired action
+}
+
+// Method for managing tables
+public static void manageTables() {
+// Prompt user to view or update the status of tables
+// Connect to database and perform the desired action
+}
+}
+
